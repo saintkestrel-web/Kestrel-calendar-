@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+<title>Kestrel Calendar</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  font-family: Arial, sans-serif;
+  background: #0b1120;
+  color: #f1f5f9;
+}
+
+.app {
+  max-width: 750px;
+  margin: auto;
+}
+
+header {
+  text-align: center;
+  padding: 20px 0;
+}
+
+header h1 {
+  margin: 0;
+  color: #60a5fa;
+  font-size: 28px;
+}
+
+header p {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:active {
+  opacity: 0.7;
+}
+
+.month-title {
+  font-size: 21px;
+  font-weight: bold;
+  text-align: center;
+  flex: 1;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: #93c5fd;
+  padding: 8px 0;
+}
+
+.day {
+  min-height: 85px;
+  border: 1px solid #293449;
+  background: #151f30;
+  border-radius: 8px;
+  padding: 5px 2px;
+  text-align: center;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.day.empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+
+.day.today {
+  border: 2px solid #60a5fa;
+}
+
+.day.selected {
+  background: #263c60;
+}
+
+.day.birthday {
+  background: #422344;
+  border-color: #f472b6;
+}
+
+.day.holiday {
+  border-color: #eab308;
+}
+
+.date-number {
+  display: block;
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 5px;
+}
+
+.market {
+  display: block;
+  color: #86efac;
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+
+.special {
+  display: block;
+  color: #fcd34d;
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.birthday .special {
+  color: #f9a8d4;
+}
+
+.event-dot {
+  display: block;
+  color: #93c5fd;
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.panel {
+  margin-top: 20px;
+  padding: 16px;
+  background: #151f30;
+  border: 1px solid #293449;
+  border-radius: 12px;
+}
+
+.panel h2 {
+  margin-top: 0;
+  font-size: 18px;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #0b1120;
+  color: white;
+  font-size: 15px;
+}
+
+label {
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.event {
+  padding: 12px 0;
+  border-bottom: 1px solid #293449;
+  overflow-wrap: anywhere;
+}
+
+.event strong {
+  color: #93c5fd;
+}
+
+.event p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.delete-btn {
+  background: #991b1b;
+  margin-top: 5px;
+}
+
+.note {
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 20px;
+  text-align: center;
+}
+
+@media (max-width: 400px) {
+  body {
+    padding: 8px;
+  }
+
+  .day {
+    min-height: 76px;
+  }
+
+  .date-number {
+    font-size: 13px;
+  }
+
+  .market, .special, .event-dot {
+    font-size: 8px;
+  }
+
+  button {
+    padding: 9px 8px;
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header>
+  <h1>🗓️ Kestrel Calendar</h1>
+  <p>Your personal calendar, your special days.</p>
+</header>
+
+<div class="controls">
+  <button id="prevMonth">❮</button>
+  <div class="month-title" id="monthTitle"></div>
+  <button id="nextMonth">❯</button>
+</div>
+
+<div style="text-align:center; margin-bottom:15px;">
+  <button id="todayBtn">Today</button>
+  <button id="addEventBtn">+ Add Event</button>
+</div>
+
+<div class="calendar" id="calendar"></div>
+
+<div class="panel" id="eventPanel">
+  <h2 id="selectedTitle">Select a date</h2>
+  <div id="selectedDetails"></div>
+  <div id="eventList"></div>
+</div>
+
+<div class="panel" id="formPanel" hidden>
+  <h2 id="formTitle">Add an Event</h2>
+
+  <form id="eventForm">
+    <label for="eventName">Event name</label>
+    <input id="eventName" maxlength="100" required
+      placeholder="e.g. Meeting, Birthday">
+
+    <label for="eventDate">Date</label>
+    <input id="eventDate" type="date" required>
+
+    <label for="eventTime">Time (optional)</label>
+    <input id="eventTime" type="time">
+
+    <label for="eventNotes">Notes (optional)</label>
+    <textarea id="eventNotes" maxlength="1000" rows="3"
+      placeholder="Add details about your event"></textarea>
+
+    <button type="submit">Save Event</button>
+    <button type="button" id="cancelBtn"
+      style="background:#475569;">Cancel</button>
+  </form>
+</div>
+
+<p class="note">
+  Market days: Eke · Orie · Afo · Nkwo<br>
+  Your personal events are saved on this device.
+</p>
+
+</div>
+
+<script>
+const calendar = document.getElementById("calendar");
+const monthTitle = document.getElementById("monthTitle");
+const selectedTitle = document.getElementById("selectedTitle");
+const selectedDetails = document.getElementById("selectedDetails");
+const eventList = document.getElementById("eventList");
+const formPanel = document.getElementById("formPanel");
+const eventForm = document.getElementById("eventForm");
+
+const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const marketDays = ["Afo", "Nkwo", "Eke", "Orie"];
+
+// Confirmed anchor: October 10, 2026 = Afo.
+const anchorDate = Date.UTC(2026, 9, 10);
+
+let currentDate = new Date();
+currentDate.setHours(12, 0, 0, 0);
+
+let selectedDate = formatDate(currentDate);
+let editingEventId = null;
+
+let events = [];
+
+try {
+  events = JSON.parse(localStorage.getItem("kestrelEvents")) || [];
+} catch {
+  events = [];
+}
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function parseDate(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day, 12);
+}
+
+function marketDay(date) {
+  const utcDate = Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+
+  const difference = Math.round(
+    (utcDate - anchorDate) / 86400000
+  );
+
+  const index = ((difference % 4) + 4) % 4;
+  return marketDays[index];
+}
+
+// Calculate Easter Sunday using the Gregorian calendar.
+function easterSunday(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function specialDays(dateString) {
+  const year = Number(dateString.slice(0, 4));
+  const specials = [];
+
+  if (dateString === `${year}-01-01`) {
+    specials.push({ name: "🎉 New Year", type: "holiday" });
+  }
+
+  if (dateString === `${year}-11-25`) {
+    specials.push({ name: "🎂 My Birthday", type: "birthday" });
+  }
+
+  if (dateString === `${year}-12-25`) {
+    specials.push({ name: "🎄 Xmas", type: "holiday" });
+  }
+
+  if (dateString === easterSunday(year)) {
+    specials.push({ name: "✝️ Easter", type: "holiday" });
+  }
+
+  return specials;
+}
+
+function saveEvents() {
+  localStorage.setItem("kestrelEvents", JSON.stringify(events));
+}
+
+function renderCalendar() {
+  calendar.innerHTML = "";
+
+  monthTitle.textContent = currentDate.toLocaleDateString(
+    "en-US",
+    { month: "long", year: "numeric" }
+  );
+
+  weekdays.forEach(day => {
+    const heading = document.createElement("div");
+    heading.className = "weekday";
+    heading.textContent = day;
+    calendar.appendChild(heading);
+  });
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayString = formatDate(new Date());
+
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement("div");
+    empty.className = "day empty";
+    calendar.appendChild(empty);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day, 12);
+    const dateString = formatDate(date);
+    const market = marketDay(date);
+    const specials = specialDays(dateString);
+    const dailyEvents = events.filter(event => event.date === dateString);
+
+    const cell = document.createElement("div");
+    cell.className = "day";
+
+    if (dateString === todayString) cell.classList.add("today");
+    if (dateString === selectedDate) cell.classList.add("selected");
+
+    if (specials.some(item => item.type === "birthday")) {
+      cell.classList.add("birthday");
+    } else if (specials.length) {
+      cell.classList.add("holiday");
+    }
+
+    const number = document.createElement("span");
+    number.className = "date-number";
+    number.textContent = day;
+    cell.appendChild(number);
+
+    const marketLabel = document.createElement("span");
+    marketLabel.className = "market";
+    marketLabel.textContent = market;
+    cell.appendChild(marketLabel);
+
+    specials.forEach(item => {
+      const label = document.createElement("span");
+      label.className = "special";
+      label.textContent = item.name;
+      cell.appendChild(label);
+    });
+
+    if (dailyEvents.length) {
+      const eventLabel = document.createElement("span");
+      eventLabel.className = "event-dot";
+      eventLabel.textContent = `📝 ${dailyEvents.length} event${dailyEvents.length > 1 ? "s" : ""}`;
+      cell.appendChild(eventLabel);
+    }
+
+    cell.addEventListener("click", () => {
+      selectedDate = dateString;
+      renderCalendar();
+      renderSelectedDate();
+    });
+
+    calendar.appendChild(cell);
+  }
+}
+
+function renderSelectedDate() {
+  const date = parseDate(selectedDate);
+
+  selectedTitle.textContent = date.toLocaleDateString(
+    "en-US",
+    { weekday: "long", month: "long", day: "numeric", year: "numeric" }
+  );
+
+  selectedDetails.textContent = `Market day: ${marketDay(date)}`;
+
+  const specials = specialDays(selectedDate);
+  const dailyEvents = events.filter(event => event.date === selectedDate);
+
+  eventList.innerHTML = "";
+
+  specials.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "event";
+
+    const strong = document.createElement("strong");
+    strong.textContent = item.name;
+
+    const p = document.createElement("p");
+    p.textContent = "Yearly calendar date";
+
+    div.append(strong, p);
+    eventList.appendChild(div);
+  });
+
+  if (!dailyEvents.length && !specials.length) {
+    eventList.textContent = "No events on this date.";
+  }
+
+  dailyEvents.forEach(event => {
+    const div = document.createElement("div");
+    div.className = "event";
+
+    const title = document.createElement("strong");
+    title.textContent = event.name;
+
+    const details = document.createElement("p");
+    details.textContent =
+      (event.time ? event.time + " · " : "") +
+      (event.notes || "Personal event");
+
+    const edit = document.createElement("button");
+    edit.textContent = "Edit";
+    edit.addEventListener("click", () => openForm(event));
+
+    const remove = document.createElement("button");
+    remove.textContent = "Delete";
+    remove.className = "delete-btn";
+    remove.style.marginLeft = "8px";
+
+    remove.addEventListener("click", () => {
+      if (confirm("Delete this event?")) {
+        events = events.filter(item => item.id !== event.id);
+        saveEvents();
+        renderCalendar();
+        renderSelectedDate();
+      }
+    });
+
+    div.append(title, details, edit, remove);
+    eventList.appendChild(div);
+  });
+}
+
+function openForm(event = null) {
+  editingEventId = event ? event.id : null;
+  eventForm.reset();
+
+  document.getElementById("formTitle").textContent =
+    event ? "Edit Event" : "Add an Event";
+
+  document.getElementById("eventName").value =
+    event ? event.name : "";
+
+  document.getElementById("eventDate").value =
+    event ? event.date : selectedDate;
+
+  document.getElementById("eventTime").value =
+    event ? event.time || "" : "";
+
+  document.getElementById("eventNotes").value =
+    event ? event.notes || "" : "";
+
+  formPanel.hidden = false;
+  document.getElementById("eventName").focus();
+}
+
+eventForm.addEventListener("submit", event => {
+  event.preventDefault();
+
+  const name = document.getElementById("eventName").value.trim();
+  const date = document.getElementById("eventDate").value;
+  const time = document.getElementById("eventTime").value;
+  const notes = document.getElementById("eventNotes").value.trim();
+
+  if (!name || !date) return;
+
+  if (editingEventId !== null) {
+    events = events.map(item =>
+      item.id === editingEventId
+        ? { ...item, name, date, time, notes }
+        : item
+    );
+  } else {
+    events.push({
+      id: Date.now(),
+      name,
+      date,
+      time,
+      notes
+    });
+  }
+
+  selectedDate = date;
+  currentDate = parseDate(date);
+
+  saveEvents();
+  formPanel.hidden = true;
+  renderCalendar();
+  renderSelectedDate();
+});
+
+document.getElementById("prevMonth").addEventListener("click", () => {
+  currentDate.setMonth(currentDate.getMonth() - 1);
+  renderCalendar();
+});
+
+document.getElementById("nextMonth").addEventListener("click", () => {
+  currentDate.setMonth(currentDate.getMonth() + 1);
+  renderCalendar();
+});
+
+document.getElementById("todayBtn").addEventListener("click", () => {
+  currentDate = new Date();
+  currentDate.setHours(12, 0, 0, 0);
+  selectedDate = formatDate(currentDate);
+  renderCalendar();
+  renderSelectedDate();
+});
+
+document.getElementById("addEventBtn").addEventListener("click", () => {
+  openForm();
+});
+
+document.getElementById("cancelBtn").addEventListener("click", () => {
+  formPanel.hidden = true;
+});
+
+renderCalendar();
+renderSelectedDate();
+</script>
+</body>
+  </html>
