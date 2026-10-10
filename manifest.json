@@ -1,0 +1,10 @@
+{
+"name": "Kestrel Calendar",
+"short_name": "Kestrel Calendar",
+"description": "Your personal calendar with Igbo market days and important dates.",
+"start_url": "./",
+"scope": "./",
+"display": "standalone",
+"background_color": "#07111f",
+"theme_color": "#07111f"
+}
